@@ -1,4 +1,4 @@
-const CACHE = "kb-coach-v2";
+const CACHE = "kb-coach-v3";
 const ASSETS = ["./", "index.html", "app.js", "kettlebell-sessions.json", "style.css", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", e => {

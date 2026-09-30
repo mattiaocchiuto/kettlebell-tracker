@@ -169,6 +169,7 @@ function completeStep() {
       run.restTotal = ex.rest;
       run.restEndAt = Date.now() + ex.rest * 1000;
       view = "rest";
+      announce(`Rest ${ex.rest} seconds`);
     }
     prepStep();
   }
@@ -179,6 +180,7 @@ function endRest(silent) {
   run.restEndAt = null; view = "exercise";
   if (!silent) alertDone();
   saveRun(); render();
+  announce("Rest over");
 }
 
 function backStep() {
@@ -209,21 +211,32 @@ function saveSummary() {
 }
 
 /* ---------- views ---------- */
+const CHEVRON = `<svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const workSets = s => s.exercises.reduce((a, e) => a + e.sets * (e.perSide ? 2 : 1), 0);
+
 function viewHome() {
   const p = phaseInfo(settings.phase);
   const sessions = currentSessions();
-  const last = key => { const h = [...history].reverse().find(x => x.key === key); return h ? `Last: ${fmtDate(h.date)}` : "Not done yet"; };
+  const keys = Object.keys(sessions);
+  const mine = history.filter(h => h.phase === settings.phase);
+  const lastKey = mine.length ? mine[mine.length - 1].key : null;
+  const upNext = keys.length > 1 && lastKey && keys.includes(lastKey) ? keys[(keys.indexOf(lastKey) + 1) % keys.length] : keys[0];
+  const last = key => { const h = [...history].reverse().find(x => x.key === key && x.phase === settings.phase); return h ? `Last done ${fmtDate(h.date)}` : "Not done yet"; };
+  const len = PROGRAM.meta.session_length_min;
   return `
     <div class="top"><span class="kicker">${esc(PROGRAM.meta.title || "Kettlebell block")}</span><button class="link" data-act="go" data-v="settings">Settings</button></div>
     <h1>Kettlebell Coach</h1>
     <span class="phase-chip">${esc(p.label)} · ${STATUS[p.status] || ""}</span>
     ${p.note ? `<div class="warn">${esc(p.note)}</div>` : ""}
-    ${Object.entries(sessions).map(([k, s]) => `
-      <div class="card tap" data-act="overview" data-k="${k}">
-        <div class="t">${esc(s.title)}</div>
-        <div class="dim" style="font-size:.85rem;margin:.25rem 0">${esc(s.exercises.map(e => e.name).join(" · "))}</div>
-        <div class="dim" style="font-size:.8rem">${last(k)}</div>
-      </div>`).join("")}
+    <h2>Choose a session</h2>
+    ${keys.map(k => { const s = sessions[k]; return `
+      <button class="card tap" data-act="overview" data-k="${k}">
+        <div class="card-main">
+          <div class="t">${esc(s.title)}${keys.length > 1 && k === upNext ? ` <span class="badge">Up next</span>` : ""}</div>
+          <div class="dim">${esc(s.exercises.map(e => e.name).join(" · "))}</div>
+          <div class="meta">${s.exercises.length} exercises · ${workSets(s)} sets${len ? ` · ${esc(len)} min` : ""} · ${last(k)}</div>
+        </div>${CHEVRON}
+      </button>`; }).join("")}
     <div class="grow"></div>
     <button class="btn" data-act="go" data-v="history">History (${history.length})</button>`;
 }
@@ -232,12 +245,11 @@ function viewOverview() {
   const p = phaseInfo(settings.phase);
   const s = p.sessions[overviewKey];
   const stops = PROGRAM.rules.stop_and_reassess || [];
-  const totalSets = s.exercises.reduce((a, e) => a + e.sets * (e.perSide ? 2 : 1), 0);
   const len = PROGRAM.meta.session_length_min;
   return `
     <div class="top"><button class="link" data-act="go" data-v="home">‹ Back</button></div>
     <h1>${esc(s.title)}</h1>
-    <p class="dim" style="margin-top:0">${totalSets} work sets${len ? ` · ${esc(len)} min` : ""}${p.load ? ` · ${esc(p.load)}` : ""}</p>
+    <p class="dim" style="margin-top:0">${workSets(s)} work sets${len ? ` · ${esc(len)} min` : ""}${p.load ? ` · ${esc(p.load)}` : ""}</p>
     ${s.exercises.map((e, i) => `
       <div class="ex-row"><div class="n mono">${i + 1}</div><div>
         <div class="m">${esc(e.name)}</div>
@@ -245,10 +257,10 @@ function viewOverview() {
         ${e.note ? `<div class="s"><strong>${esc(e.note)}</strong></div>` : ""}
         <div class="s">${esc(e.cue)}</div></div></div>`).join("")}
     ${stops.length ? `<h2>Stop and reassess if</h2>
-      <div class="notes">${stops.map(t => `<p style="margin:.3rem 0">• ${esc(t)}</p>`).join("")}
+      <div class="notes"><ul>${stops.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
       ${PROGRAM.rules.progression ? `<p><strong>Progression:</strong> ${esc(PROGRAM.rules.progression)}</p>` : ""}</div>` : ""}
     <div class="grow"></div>
-    <button class="btn primary big" style="margin-top:1.5rem" data-act="start" data-k="${overviewKey}">Start session</button>`;
+    <div class="dock"><button class="btn primary big" data-act="start" data-k="${overviewKey}">Start session</button></div>`;
 }
 
 function viewWarmup() {
@@ -260,19 +272,22 @@ function viewWarmup() {
     <h1>${esc(runSession().title)}</h1>
     <p class="dim" style="margin-top:0">Tap each move as you finish it (${n}/${w.items.length}).</p>
     ${w.items.map(it => `
-      <label class="opt" style="cursor:pointer">
-        <span${done[it.id] ? ' style="opacity:.45;text-decoration:line-through"' : ""}>${esc(it.name)} <span class="dim mono">· ${esc(it.reps)}</span></span>
+      <label class="opt check${done[it.id] ? " is-done" : ""}">
+        <span>${esc(it.name)} <span class="dim mono">· ${esc(it.reps)}</span></span>
         <input type="checkbox" data-act="wtoggle" data-id="${esc(it.id)}" ${done[it.id] ? "checked" : ""}>
       </label>`).join("")}
     <div class="grow"></div>
-    <button class="btn primary big" style="margin-top:1.5rem" data-act="work">${n === w.items.length ? "Start first exercise" : "Start exercises"}</button>
-    ${n < w.items.length ? `<div class="next-up">Skip whatever you've not done — this just starts the session.</div>` : ""}`;
+    <div class="dock"><button class="btn primary big" data-act="work">${n === w.items.length ? "Start first exercise" : "Start exercises"}</button>
+    ${n < w.items.length ? `<div class="next-up">Skip whatever you haven't done.</div>` : ""}</div>`;
 }
 
 function progressInfo() {
   const steps = runSteps();
   return { steps, pct: Math.round((run.i / steps.length) * 100) };
 }
+
+const barHtml = pct => `<div class="bar" role="progressbar" aria-label="Session progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`;
+const topHtml = canUndo => `<div class="top"><button class="link" data-act="back" ${canUndo ? "" : "disabled"}>‹ Undo last</button><button class="link danger" data-act="end">End session</button></div>`;
 
 function viewExercise() {
   const { steps, pct } = progressInfo();
@@ -284,26 +299,31 @@ function viewExercise() {
     ? (nextStep.exIdx !== step.exIdx ? `Next: ${session.exercises[nextStep.exIdx].name}` : nextStep.side ? `Next: ${nextStep.side} side` : `Next: set ${nextStep.set}`)
     : "Last one!";
   const timed = ex.kind === "time";
+  const inc = timed || ex.unit ? 5 : 1;
+  const dots = Array.from({ length: ex.sets }, (_, k) => `<i class="dot${k + 1 < step.set ? " done" : k + 1 === step.set ? " cur" : ""}"></i>`).join("");
+  const firstOfEx = step.set === 1 && (!step.side || step.side === "Left");
+  const repsLabel = timed ? "Seconds held" : ex.unit === "m" ? "Distance (m)" : "Reps done";
   return `
-    <div class="top"><button class="link" data-act="back" ${run.i === 0 ? "disabled style='opacity:.3'" : ""}>‹ Undo last</button>
-      <button class="link danger" data-act="end">End session</button></div>
-    <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="setline">Exercise ${step.exIdx + 1}/${session.exercises.length} · Set ${step.set} of ${ex.sets}${step.side ? `<span class="side">${step.side}</span>` : ""}</div>
+    ${topHtml(run.i > 0)}
+    ${barHtml(pct)}
+    <div class="kicker">Exercise ${step.exIdx + 1} of ${session.exercises.length}</div>
     <div class="ex-name">${esc(ex.name)}</div>
+    <div class="dots-row"><div class="dots" aria-hidden="true">${dots}</div><span class="setline">Set ${step.set} of ${ex.sets}</span></div>
+    ${step.side ? `<div class="side-banner ${step.side.toLowerCase()}"><span>${step.side.toUpperCase()} SIDE</span><span>${step.side === "Left" ? "then right" : "last side"}</span></div>` : ""}
     <div class="target">${esc(targetText(ex))}</div>
-    ${ex.note ? `<div style="font-weight:700;color:var(--brass-bright)">${esc(ex.note)}</div>` : ""}
-    ${ex.cue ? `<div class="cue">${esc(ex.cue)}</div>` : ""}
-    ${timed ? `<div class="hold mono" id="hold">${holdText()}</div>
-      <button class="btn small" style="margin:0 auto 1rem;display:block" data-act="hold">${run.holdEndAt ? "Stop hold" : "Start hold"}</button>` : ""}
+    ${ex.note ? `<div class="exnote">${esc(ex.note)}</div>` : ""}
+    ${timed ? `<div class="hold mono" id="hold" role="timer" aria-label="Hold time remaining">${holdText()}</div>
+      <button class="btn" style="margin-bottom:1rem" data-act="hold">${run.holdEndAt ? "Stop hold" : "Start hold"}</button>` : ""}
     <div class="steppers">
-      ${ex.kg != null ? `<div class="stepper"><div class="l">Load (kg)</div><div class="v" id="v-kg">${run.cur.kg}</div>
-        <div class="b"><button data-act="adj" data-f="kg" data-d="-2">−</button><button data-act="adj" data-f="kg" data-d="2">+</button></div></div>` : `<div></div>`}
-      <div class="stepper"><div class="l">${timed ? "Seconds held" : (ex.unit === "m" ? "Distance (m)" : "Reps done")}</div><div class="v" id="v-reps">${run.cur.reps}</div>
-        <div class="b"><button data-act="adj" data-f="reps" data-d="-${timed ? 5 : ex.unit ? 5 : 1}">−</button><button data-act="adj" data-f="reps" data-d="${timed ? 5 : ex.unit ? 5 : 1}">+</button></div></div>
+      ${ex.kg != null ? `<div class="stepper" role="group" aria-label="Load in kilograms"><div class="l">Load (kg)</div><output class="v" id="v-kg" aria-live="polite">${run.cur.kg}</output>
+        <div class="b"><button data-act="adj" data-f="kg" data-d="-2" aria-label="Decrease load by 2 kilograms">−</button><button data-act="adj" data-f="kg" data-d="2" aria-label="Increase load by 2 kilograms">+</button></div></div>` : ""}
+      <div class="stepper${ex.kg == null ? " wide" : ""}" role="group" aria-label="${repsLabel}"><div class="l">${repsLabel}</div><output class="v" id="v-reps" aria-live="polite">${run.cur.reps}</output>
+        <div class="b"><button data-act="adj" data-f="reps" data-d="-${inc}" aria-label="Decrease by ${inc}">−</button><button data-act="adj" data-f="reps" data-d="${inc}" aria-label="Increase by ${inc}">+</button></div></div>
     </div>
+    ${ex.cue ? `<details class="cuebox"${firstOfEx ? " open" : ""}><summary>Form cue</summary><p>${esc(ex.cue)}</p></details>` : ""}
     <div class="grow"></div>
-    <button class="btn primary big" data-act="done">${step.side === "Left" ? "Done — switch side" : "Done set"}</button>
-    <div class="next-up">${esc(nextTxt)}${step.lastOfSet && nextStep ? ` · rest ${ex.rest}s` : ""}</div>`;
+    <div class="dock"><button class="btn primary big" data-act="done">${step.side === "Left" ? "Done — switch side" : "Done set"}</button>
+    <div class="next-up">${esc(nextTxt)}${step.lastOfSet && nextStep ? ` · rest ${ex.rest}s` : ""}</div></div>`;
 }
 
 function holdText() {
@@ -314,24 +334,28 @@ function holdText() {
 
 const RING = 2 * Math.PI * 90;
 function viewRest() {
-  const { steps } = progressInfo();
+  const { steps, pct } = progressInfo();
   const step = steps[run.i];
   const session = runSession();
   const ex = session.exercises[step.exIdx];
   const same = steps[run.i - 1].exIdx === step.exIdx;
   return `
-    <div class="top"><button class="link" data-act="back">‹ Undo last</button><button class="link danger" data-act="end">End session</button></div>
+    ${topHtml(true)}
+    ${barHtml(pct)}
     <div class="center"><div class="kicker">Rest</div></div>
-    <div class="ring-wrap">
-      <svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90" fill="none" stroke-width="10"/>
+    <div class="ring-wrap" role="timer" aria-label="Rest time remaining">
+      <svg viewBox="0 0 200 200" aria-hidden="true"><circle class="bg" cx="100" cy="100" r="90" fill="none" stroke-width="10"/>
         <circle class="fg" id="ring" cx="100" cy="100" r="90" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="${RING}" stroke-dashoffset="0"/></svg>
       <div class="num mono" id="rt">${fmtTime(remaining())}</div>
     </div>
-    <div class="row"><button class="btn" data-act="plus">+15 s</button><button class="btn" data-act="skip">Skip rest</button></div>
-    <div class="grow"></div>
-    <div class="card" style="margin-top:1.5rem"><div class="kicker">Up next</div>
+    <button class="btn" data-act="plus">+15 s rest</button>
+    <div class="card" style="margin-top:1.2rem"><div class="kicker">Up next</div>
       <div class="t">${esc(ex.name)}</div>
-      <div class="dim" style="font-size:.9rem">${same ? `Set ${step.set} of ${ex.sets}` : "New exercise"}${step.side ? ` · ${step.side}` : ""} · ${esc(targetText(ex))}${run.cur.kg != null ? ` · ${run.cur.kg} kg` : ""}</div></div>`;
+      <div class="dim">${same ? `Set ${step.set} of ${ex.sets}` : "New exercise"}${step.side ? ` · ${step.side} side` : ""} · ${esc(targetText(ex))}${run.cur.kg != null ? ` · ${run.cur.kg} kg` : ""}</div>
+      ${ex.note ? `<div class="exnote" style="margin-top:.4rem">${esc(ex.note)}</div>` : ""}
+      ${ex.cue && !same ? `<details class="cuebox" style="margin:.7rem 0 0"><summary>Form cue</summary><p>${esc(ex.cue)}</p></details>` : ""}</div>
+    <div class="grow"></div>
+    <div class="dock"><button class="btn primary big" data-act="skip">Skip rest</button></div>`;
 }
 const remaining = () => Math.max(0, Math.ceil((run.restEndAt - Date.now()) / 1000));
 
@@ -341,12 +365,12 @@ function viewSummary() {
   return `
     <div class="kicker">Session complete</div>
     <h1>${esc(runSession().title)} done</h1>
-    <div class="stat"><div><b>${fmtTime(dur)}</b><span>Time</span></div><div><b>${run.log.length}</b><span>Sets</span></div><div><b>${vol}</b><span>kg lifted (reps)</span></div></div>
-    <h2 style="margin-top:.5rem">Notes</h2>
+    <div class="stat"><div><b>${fmtTime(dur)}</b><span>Time</span></div><div><b>${run.log.length}</b><span>Sets</span></div><div><b>${vol}</b><span>kg × reps</span></div></div>
+    <h2 style="margin-top:.5rem"><label for="note">Notes</label></h2>
     <textarea id="note" placeholder="How did it feel? Any lower-back or get-up issues?"></textarea>
     <div class="grow"></div>
-    <button class="btn primary big" style="margin-top:1.2rem" data-act="save">Save to history</button>
-    <button class="link danger" style="width:100%;margin-top:.4rem" data-act="discard">Discard</button>`;
+    <div class="dock"><button class="btn primary big" data-act="save">Save to history</button>
+    <button class="link danger" style="width:100%;justify-content:center" data-act="discard">Discard</button></div>`;
 }
 
 function viewHistory() {
@@ -356,7 +380,7 @@ function viewHistory() {
     <h1>History</h1>
     ${list.length ? list.map(h => `
       <details class="card"><summary><div class="t">${esc(h.title)} <span class="dim" style="font-weight:400">· ${fmtDate(h.date)}</span></div>
-        <div class="dim" style="font-size:.85rem">${fmtTime(h.durationSec)} · ${h.sets.length} sets</div></summary>
+        <div class="dim" style="font-size:.9rem">${fmtTime(h.durationSec)} · ${h.sets.length} sets</div></summary>
         <div class="log">${h.sets.map(s => `${esc(s.ex)} · set ${s.set}${s.side ? " " + s.side[0] : ""} — ${s.kg != null ? s.kg + " kg × " : ""}${s.reps} ${esc(s.unit || "")}`).join("<br>")}
         ${h.note ? `<br><em>“${esc(h.note)}”</em>` : ""}</div>
         <button class="link danger" data-act="delhist" data-id="${h.id}">Delete</button></details>`).join("")
@@ -373,15 +397,26 @@ function viewSettings() {
     <h2>Data</h2>
     <div class="row"><button class="btn small" data-act="export">Export JSON</button>
       <label class="btn small" style="margin:0">Import<input type="file" id="import" accept="application/json" hidden></label></div>
-    <p class="dim" style="font-size:.8rem">Everything is stored on this device only. Export regularly to back it up.</p>`;
+    <p class="dim" style="font-size:.875rem">Everything is stored on this device only. Export regularly to back it up.</p>`;
 }
 
 /* ---------- render / events ---------- */
+let lastScreen = null;
 function render() {
   const views = { home: viewHome, overview: viewOverview, warmup: viewWarmup, exercise: viewExercise, rest: viewRest, summary: viewSummary, history: viewHistory, settings: viewSettings };
   app.innerHTML = views[view]();
   window.scrollTo(0, 0);
+  // On a new screen (or the next set) move focus to the heading so screen readers announce it.
+  const screen = `${view}:${run ? run.i : ""}`;
+  if (screen !== lastScreen) {
+    lastScreen = screen;
+    const h = app.querySelector(".ex-name, h1, .kicker");
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+  }
 }
+
+const live = document.getElementById("live");
+function announce(msg) { if (live) { live.textContent = ""; setTimeout(() => { live.textContent = msg; }, 50); } }
 
 app.addEventListener("click", e => {
   const el = e.target.closest("[data-act]");
@@ -392,7 +427,11 @@ app.addEventListener("click", e => {
     case "overview": overviewKey = d.k; view = "overview"; render(); break;
     case "start": startSession(d.k); break;
     case "work": beginWork(); break;
-    case "wtoggle": { const y = window.scrollY; run.warmDone[d.id] = el.checked; saveRun(); render(); window.scrollTo(0, y); break; }
+    case "wtoggle": {
+      const y = window.scrollY; run.warmDone[d.id] = el.checked; saveRun(); render(); window.scrollTo(0, y);
+      const again = app.querySelector(`input[data-id="${CSS.escape(d.id)}"]`); if (again) again.focus({ preventScroll: true });
+      break;
+    }
     case "done": completeStep(); break;
     case "back": backStep(); break;
     case "skip": endRest(true); break;
@@ -458,7 +497,7 @@ function tick() {
     if (h) h.textContent = fmtTime(Math.max(0, left));
     if (left <= 3 && left > 0 && left !== lastWhole) beep(660, 0.08);
     lastWhole = left;
-    if (left <= 0) { run.holdEndAt = null; alertDone(); saveRun(); render(); }
+    if (left <= 0) { run.holdEndAt = null; alertDone(); saveRun(); render(); announce("Hold complete"); }
   }
 }
 setInterval(tick, 250);
