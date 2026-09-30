@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "title": "Kettlebell block",
+    "purpose": "Two strength sessions per week to build hinge power and trunk/unilateral stability alongside running",
+    "format": "Straight sets and reps. No EMOM/Tabata/AMRAP.",
+    "equipment": "One 16 kg kettlebell (12 kg for overhead work if available). 20 kg only in weeks 7-8, and only if owned.",
+    "session_length_min": "25-30",
+    "training_days": null,
+    "training_days_note": "To be filled in. Sessions go on easy days, never the day before a quality session or race.",
+    "rest_between_sets_s": "60-90",
+    "start_note": "Phase 1 (technique) is complete. Race week is light activation only, at least 48 h before the Oct 4 half marathon. Phase 2 starts once legs feel normal after the race."
+  },
+  "rules": {
+    "stop_and_reassess": [
+      "Lower back pain (not soreness) after swings",
+      "Knee pain in the goblet squat",
+      "Running feels flat for more than two consecutive weeks",
+      "Get-up feels unstable rather than just unfamiliar: drop back to the half get-up"
+    ],
+    "progression": "Change one or two things at a time. Only move to the next phase when the current one feels clean."
+  },
+  "warmup": {
+    "duration_min": 5,
+    "applies_to": "every session",
+    "items": [
+      { "id": "hip-circles", "name": "Hip circles", "reps": "10/side" },
+      { "id": "glute-bridge", "name": "Glute bridges", "reps": "15" },
+      { "id": "wall-hinge", "name": "Bodyweight hinge to wall", "reps": "15" },
+      { "id": "deadbug", "name": "Deadbugs", "reps": "8/side" },
+      { "id": "swing-pattern", "name": "Unweighted swing pattern (no bell)", "reps": "20" }
+    ]
+  },
+  "exercises": {
+    "swing": { "name": "Two-hand swing", "cue": "Hinge, not squat. The bell floats from the hip snap, not the arms. Shins vertical, back flat. Feel it in glutes and hamstrings; stop if you feel it in lower back or shoulders." },
+    "goblet-squat": { "name": "Goblet squat", "cue": "Bell at chest, chest up, elbows inside knees, heels down." },
+    "suitcase-carry": { "name": "Suitcase carry", "cue": "Stay stacked, don't lean away from the bell. If you lean, it's too heavy." },
+    "half-get-up": { "name": "Half get-up", "cue": "Slow and deliberate. Stop at the elbow/hand prop, no overhead lunge yet." },
+    "full-get-up": { "name": "Full Turkish get-up", "cue": "Roll to elbow, to hand, sweep the leg through, stand, then reverse exactly the same way. Only when the half get-up is clean." },
+    "single-leg-rdl": { "name": "Single-leg RDL", "cue": "Hips square, standing leg soft, hinge forward as the trailing leg extends back." },
+    "racked-carry": { "name": "Racked carry", "cue": "Bell at shoulder, elbow tucked, ribs down. Don't lean toward the loaded side." },
+    "single-arm-row": { "name": "Single-arm row", "cue": "Flat back, pull the elbow past the ribs, no torso rotation to help the pull." },
+    "side-plank": { "name": "Side plank", "cue": "Straight line from ankle to shoulder, hips lifted, not sagging." }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "label": "Weeks 1-2: technique",
+      "status": "done",
+      "load": "12-16 kg",
+      "sessions": {
+        "A": [
+          { "exercise": "swing", "sets": 3, "reps": "8", "rest_s": 90 },
+          { "exercise": "goblet-squat", "sets": 2, "reps": "6", "rest_s": 90 },
+          { "exercise": "suitcase-carry", "sets": 2, "reps": "20 m/side", "rest_s": 60 },
+          { "exercise": "half-get-up", "sets": 2, "reps": "2/side", "rest_s": 90 }
+        ],
+        "B": [
+          { "exercise": "single-leg-rdl", "sets": 3, "reps": "8/side", "rest_s": 90 },
+          { "exercise": "racked-carry", "sets": 3, "reps": "30 m/side", "rest_s": 60 },
+          { "exercise": "single-arm-row", "sets": 3, "reps": "10/side", "rest_s": 60 },
+          { "exercise": "side-plank", "sets": 3, "reps": "30 s/side", "rest_s": 60 },
+          { "exercise": "swing", "sets": 3, "reps": "10", "rest_s": 90 }
+        ]
+      }
+    },
+    {
+      "id": "race-week",
+      "label": "Race week (Sep 28 - Oct 4)",
+      "status": "current",
+      "load": "12 kg",
+      "note": "Optional light activation only, at least 48 h before the Oct 4 half marathon. Skip it if legs feel heavy.",
+      "sessions": {
+        "A": [
+          { "exercise": "swing", "sets": 2, "reps": "8", "rest_s": 60 },
+          { "exercise": "goblet-squat", "sets": 2, "reps": "5", "rest_s": 60 }
+        ]
+      }
+    },
+    {
+      "id": "phase-2",
+      "label": "Weeks 3-4: full volume (revised)",
+      "status": "next",
+      "load": "16 kg",
+      "note": "Start once legs feel normal after the race. Two small changes vs the original plan: swings 5x12 and a 2 s pause in the goblet squat.",
+      "sessions": {
+        "A": [
+          { "exercise": "swing", "sets": 5, "reps": "12", "rest_s": 90 },
+          { "exercise": "goblet-squat", "sets": 3, "reps": "8", "rest_s": 90, "note": "2 s pause at the bottom" },
+          { "exercise": "suitcase-carry", "sets": 3, "reps": "30 m/side", "rest_s": 60 },
+          { "exercise": "half-get-up", "sets": 3, "reps": "3/side", "rest_s": 90 }
+        ],
+        "B": [
+          { "exercise": "single-leg-rdl", "sets": 3, "reps": "8/side", "rest_s": 90 },
+          { "exercise": "racked-carry", "sets": 3, "reps": "30 m/side", "rest_s": 60 },
+          { "exercise": "single-arm-row", "sets": 3, "reps": "10/side", "rest_s": 60 },
+          { "exercise": "side-plank", "sets": 3, "reps": "30 s/side", "rest_s": 60 },
+          { "exercise": "swing", "sets": 3, "reps": "10", "rest_s": 90 }
+        ]
+      }
+    },
+    {
+      "id": "phase-3",
+      "label": "Weeks 5-6: progression",
+      "status": "upcoming",
+      "load": "16 kg",
+      "note": "Full get-up replaces the half get-up only if the half get-up is clean.",
+      "sessions": {
+        "A": [
+          { "exercise": "swing", "sets": 6, "reps": "12", "rest_s": 90 },
+          { "exercise": "goblet-squat", "sets": 3, "reps": "8", "rest_s": 90, "note": "2 s pause at the bottom" },
+          { "exercise": "suitcase-carry", "sets": 3, "reps": "40 m/side", "rest_s": 60 },
+          { "exercise": "full-get-up", "sets": 2, "reps": "2/side", "rest_s": 90 }
+        ],
+        "B": [
+          { "exercise": "single-leg-rdl", "sets": 3, "reps": "8/side", "rest_s": 90 },
+          { "exercise": "racked-carry", "sets": 3, "reps": "40 m/side", "rest_s": 60 },
+          { "exercise": "single-arm-row", "sets": 3, "reps": "10/side", "rest_s": 60 },
+          { "exercise": "side-plank", "sets": 3, "reps": "30 s/side", "rest_s": 60 },
+          { "exercise": "swing", "sets": 3, "reps": "10", "rest_s": 90 }
+        ]
+      }
+    },
+    {
+      "id": "phase-4",
+      "label": "Weeks 7-8: heavier",
+      "status": "upcoming",
+      "load": "16 kg, 20 kg for swings if owned",
+      "note": "Swings move to 5x10 at 20 kg (stay at 16 kg if you don't have one). Goblet squat 3x10. Everything else holds from weeks 5-6. Then reassess: add a third day or drop to one maintenance session a week.",
+      "sessions": {
+        "A": [
+          { "exercise": "swing", "sets": 5, "reps": "10", "rest_s": 90, "note": "20 kg if owned" },
+          { "exercise": "goblet-squat", "sets": 3, "reps": "10", "rest_s": 90, "note": "2 s pause at the bottom" },
+          { "exercise": "suitcase-carry", "sets": 3, "reps": "40 m/side", "rest_s": 60 },
+          { "exercise": "full-get-up", "sets": 2, "reps": "2/side", "rest_s": 90 }
+        ],
+        "B": [
+          { "exercise": "single-leg-rdl", "sets": 3, "reps": "8/side", "rest_s": 90 },
+          { "exercise": "racked-carry", "sets": 3, "reps": "40 m/side", "rest_s": 60 },
+          { "exercise": "single-arm-row", "sets": 3, "reps": "10/side", "rest_s": 60 },
+          { "exercise": "side-plank", "sets": 3, "reps": "30 s/side", "rest_s": 60 },
+          { "exercise": "swing", "sets": 3, "reps": "10", "rest_s": 90, "note": "20 kg if owned" }
+        ]
+      }
+    }
+  ]
+}
